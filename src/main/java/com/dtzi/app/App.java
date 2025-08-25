@@ -15,13 +15,10 @@ import java.util.stream.Stream;
 
 public class App {
   public static void main(String[] args) {
-    File dataFile = new File("data.json");
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.registerModule(new JavaTimeModule());
     ExpensesCalculator tracker = new ExpensesCalculator();
-    tracker = tracker.importData(dataFile);
+    tracker = tracker.importData(tracker.dataFile);
     // similar to with keyword in python, good practice to catch errors in the statement.
-    try (FileWriter writer = new FileWriter(dataFile)) {
+    try {
       while (true) {
         Integer action = tracker.retrieveAction();
         switch (action) {
@@ -37,10 +34,11 @@ public class App {
                   break;
           case 4: tracker.retrieveTransactions();
                   break;
+                  // default should not be reached.
           default: System.out.print("not implemented");
                    break;
         }
-        mapper.writeValue(dataFile, tracker);
+        ExpensesCalculator.mapper.writeValue(tracker.dataFile, tracker);
       }
     } catch (IOException e) {
       System.out.println(e + ": File is inaccessible");
@@ -54,6 +52,8 @@ class ExpensesCalculator {
   public List<Double> amounts;
   public List<LocalDate> dates; // use parse of String with some try-catch
   Scanner inputScanner = new Scanner(System.in); 
+  File dataFile = new File("data.json");
+  static ObjectMapper mapper = new ObjectMapper();
   Integer action;
 
   enum TransactionType {
@@ -268,13 +268,12 @@ class ExpensesCalculator {
     System.out.print("Total expenses: ");
     System.out.println(-sumOfOutgoing);
   }
-  //public function
-  
+  //Lists all transactions oldest to newest in the console.
+  //
   //returns nothing
-  public void retrieveTransactions () {
+  void retrieveTransactions () {
     System.out.println("===== List of transactions ====="); 
-    for (int a = 0; a <
-        this.transactionType.size(); a++) {
+    for (int a = 0; a < this.transactionType.size(); a++) {
       ExpensesCalculator.TransactionType transactionType =
         ExpensesCalculator.TransactionType.byIndex(this.transactionType.get(a));
       System.out.println("Transaction type: " + transactionType); 
@@ -289,18 +288,16 @@ class ExpensesCalculator {
           System.out.println("Expense type: " + moneyPurpose);
       }
       System.out.println("Amount: " + this.amounts.get(a));
-      System.out.println("Date: " + this.dates.get(a) + "\n"); 
+      System.out.println("Date: " + this.dates.get(a)); 
     }
   }
-  //public function
-  //
+
   // Attempts to read the data json and creates an ExpensesCalculator from it.
   // Unless fetching JSON fails, then creates an empty ExpensesCalculator.
   //
   //returns ExpensesCalculator tracker
-  public ExpensesCalculator importData (File dataFile) {
+  ExpensesCalculator importData (File dataFile) {
     ExpensesCalculator tracker; 
-    ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
     String data = "";
     try {
@@ -313,10 +310,6 @@ class ExpensesCalculator {
         data = data + scanner.next() + "\n";
       }
       scanner.close();
-      // Missing some error handling, but idk what errors. Can separately parse 
-      // each line into list? But how? Cant create variables in a loop.
-      // Maybe create a mapping and then create the expenses calculator by using the 
-      // lists within the map?
       tracker = mapper.readValue(data, ExpensesCalculator.class);
     }
     catch (FileNotFoundException e) {
@@ -336,11 +329,5 @@ class ExpensesCalculator {
       tracker = new ExpensesCalculator(transactionType, expenseType, amounts, dates); 
     }
     return tracker; 
-  }
-
-  //public static function
-  //returns nothing
-  public static void write () {
-    
   }
 }
